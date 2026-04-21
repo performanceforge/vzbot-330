@@ -1,0 +1,24 @@
+Follow all the steps in the Raspberry Pi Imager
+You can download the latest version in https://www.raspberrypi.com/software/
+
+Choose your device:  Raspberry Pi 3/4/5
+OS:                  Other specific-purpose OS -> 3D Printing -> Mainsail -> MainsailOS
+Choose Storage:      MicroSD
+*Customisation*
+Hostname:            vzbot330
+Localisation:        Your location
+Username:            pi 
+Password:            choose a secure password, but keep it practical as you will type it often
+Choose Wi-Fi:        Secure Network & add here your network details
+Network note:        I strongly recommend an Ethernet connection during the printer setup otherwise you will need usb-keyboard to reconnect your wifi
+Enable SSH:          Yes with Password authentication 
+Write image:         Quick check and write
+
+After flashing, safely eject the SD card before inserting it into the Raspberry Pi.
+
+IMPORTANT:
+WiFi can fail or reset during initial setup or updates.
+If this happens, you will lose SSH access and cannot reconnect without a keyboard and screen.
+
+Recommendation:
+Use Ethernet during the initial setup to ensure stable access.
