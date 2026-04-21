@@ -1,0 +1,129 @@
+# OrcaSlicer Notes
+
+These notes explain the key OrcaSlicer settings I had to change for my VZBot 330 setup.
+
+This was one of the least clearly documented parts of the setup, and getting these values wrong caused confusion and movement issues.
+
+## Important
+
+These values are not universal.
+
+They depend on:
+
+* your printer configuration
+* your homing behavior
+* your actual reachable build area
+* your offsets
+
+Use these notes as a reference for **how to find your values**, not just what my values were.
+
+---
+
+## Printable Area
+
+### My values
+
+* X: 324 mm
+* Y: 303 mm
+
+### How I found them
+
+After homing the printer, I manually moved the printhead using the screen controls.
+
+To find the printable limits:
+
+* move the printhead as far as it can safely print in **X**
+* move the printhead as far as it can safely print in **Y**
+* read the positions shown on the screen
+* use those values as your printable area
+
+For me, this resulted in:
+
+* X = 324
+* Y = 303
+
+This is important because it was not clearly explained, and if these values are wrong, your usable print area will also be wrong.
+
+---
+
+## Origin
+
+### My values
+
+* X: -5 mm
+* Y: 0 mm
+
+### How I found them
+
+After homing, the nozzle position in my setup was not sitting directly at the build plate origin in X.
+
+Y stayed at 0 in my case, but X needed adjustment.
+
+To find the origin:
+
+* home the printer
+* check where the nozzle is sitting relative to the actual build plate
+* manually move the nozzle onto the real edge / start position of the printable area
+* read the displayed position
+* use that offset as your origin value
+
+In my case:
+
+* Y stayed at 0
+* X had to be set to **-5**
+
+I originally expected this to be positive, but for my setup the working value was negative.
+
+The important part is not guessing the sign — it is testing what actually matches the physical printer behavior.
+
+---
+
+## Why this matters
+
+This part was not properly explained in the documentation, and incorrect values here can cause:
+
+* movement outside the intended area
+* printhead crashes
+* wrong print placement
+* confusion during setup
+
+---
+
+## Machine Start G-code
+
+;M104 S{first_layer_temperature[0]}       ; set nozzle temp uncomment to check preview
+;M140 S{first_layer_bed_temperature[0]}   ; set bed temp uncomment to check preview
+PRINT_START BED_TEMP={first_layer_bed_temperature[0]} EXTRUDER_TEMP={first_layer_temperature[0]}
+
+This is the working machine start G-code I used in OrcaSlicer.
+
+---
+
+## Machine End G-code
+
+PRINT_END    ; end script from macro
+
+This is the machine end G-code I used in OrcaSlicer.
+
+---
+
+## Klipper-side start / end macros and printer config
+
+See:
+
+* `start_stop.cfg`
+* `printer.cfg`
+
+These are the printer-side macros used from the Klipper / Mainsail side.
+
+This is a separate layer from the OrcaSlicer machine start / end G-code.
+
+---
+
+## Final note
+
+The most important lesson here is:
+
+do not assume the default values are correct, and do not assume the setup is clearly documented.
+
+Home the machine, move it manually, read the real positions, and set the values based on what the printer actually does.
