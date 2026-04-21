@@ -1,0 +1,150 @@
+This guide works on a Mac
+This guide is specific for CAN-BUS Connection from a Raspberry Pi to Super Pro 8
+
+IMPORTANT:
+      - This firmware is configured for CAN communication.
+      - Your CAN wiring and interface must be correctly set up.
+      - Otherwise, Klipper will not connect to the MCU after flashing.
+
+
+
+Now after the raspberry-pi-setup 
+
+IMPORTANT:
+After inserting the SD card and powering on the Raspberry Pi for the first time:
+      DO NOT remove power during the initial boot.
+      The system performs setup and filesystem expansion.
+      Interrupting this can corrupt the SD card.
+
+Place the sd card into your raspberry
+Turn your VzBot on wait for boot.
+Once login screen appears on your VzBot screen
+Open a terminal in your mac (cmd+spacebar type: terminal and hit enter)
+Paste into terminal: (you can replace vzbot330.local with your ip address too)
+                     (assuming you have used pi as username and vzbot330 as hostname)
+
+ssh pi@vzbot330.local
+
+Note: if you get something like WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!
+      - Then just paste into the terminal
+      ssh-keygen -R vzbot330.local
+      - Then type yes and that’s it
+
+Type your password and type yes when prompted
+Once you see pi@vzbot330:~ $  (your are logged into your VzBot)
+Paste and run the following commands one by one: (if promted to type yes do so)
+
+sudo apt-get update
+
+sudo apt-get upgrade
+
+cd ~/klipper/
+
+Note: make clean is not required for a first build. However, ALWAYS run it if:
+      - you change microcontroller settings
+      - you switch communication type (USB/CAN)
+      - you are reflashing after a failed attempt
+      It removes previous build artifacts and prevents hard-to-debug issues.
+
+make clean 
+
+make menuconfig
+
+Once here move with your keyboard arrows:
+On the top press right or spacebar. (Extra low-level configuration)
+Micro-controller:       (STM32) (Check your Super Pro 8 Processor letters)
+Processor model:        (STM32H723) (Check your Super Pro 8 Processor letters)
+Clock Reference:        (25Mhz)
+Communication interface (CAN bus PB8/PB9)
+CAN bus Speed:          (1000000) 
+GPIO:                   (!PF8)  (Specific to FLY Super Pro 8 H723 configuration)
+
+Note: This value depends on the board configuration and should match the VzBot / Super Pro 8 reference setup.
+      Do not change unless you know your board pin mapping.
+
+Now press Q and then Y
+
+Paste into your terminal: 
+
+make
+
+Once finished. Now we are going to get the file from our pi (klipper.bin) to flash the 
+Super Pro 8 board. (Use cd to navigate back main folder or cd klipper into a folder)
+In the terminal paste: (ls is for listing files in folder)
+
+ls ~/klipper/out/
+
+And you should see (klipper.bin)
+Then paste into the terminal:
+
+realpath ~/klipper/out/klipper.bin
+
+Which should give you this:
+/home/pi/klipper/out/klipper.bin
+
+Now open a NEW terminal window on your Mac (do NOT connect via SSH)
+Paste into your new terminal:
+
+scp pi@vzbot330.local:/home/pi/klipper/out/klipper.bin ~/Desktop/
+
+Now it will ask you for your pi password you have setup earlier. 
+It will start downloading the file to your mac.
+Once you have your klipper.bin file in your desktop rename it exactly to: 
+firmware.bin
+You will need an additional formated MicroSD card for this.
+Then copy or paste the file it into the formated MicroSD card a small one even 
+1gb will work (FAT 32 Format)
+
+Now from your SSH terminal paste this:
+
+sudo shutdown -h now
+
+This will shut down your raspberry pi before switching of the printer power toggle.
+Always shutdown your pi before turning the power off! 
+This avoids hard shutdowns which cause major issues in the long run.
+
+Now with the pi shutdown, power off the printer. 
+
+IMPORTANT:
+     Always power OFF the printer before inserting or removing the SD card from the Super Pro 8 board.
+     Failure to do so can:
+     - corrupt the SD card
+     - interrupt flashing
+     - damage the board in rare cases
+
+I recomend to unplug your raspberry pi power cable, as for the flash its faster and 
+safer.
+Plug the MicroSD card with the firmware.bin file into your Super Pro 8 Board. 
+Power on the printer and wait. The flash is probably done in a couple of seconds but 
+just wait a minute or two.
+Once you switched your printer off again take the MicroSD card and remove it from 
+your Super Pro 8 board. You can plug in the power cable of the pi back in. 
+At your computer, check the content of the card, it should say FLY.CUR if the flash 
+was successful.
+
+Next step is setting your Pi as a secondary MCU
+In your terminal in ssh paste one by one these:
+
+cd ~/klipper/
+
+sudo cp ./scripts/klipper-mcu.service /etc/systemd/system/
+
+sudo systemctl enable klipper-mcu.service
+
+cd ~/klipper/
+
+make menuconfig
+
+Here choose:
+Micro-controller:   (Linux process)
+GPIO:               Remove (!PF8)
+
+Press Q and Y
+
+ Now paste one by one these:
+
+sudo service klipper stop
+
+make flash
+
+sudo service klipper start
