@@ -205,3 +205,42 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# =========================
+# VZBot / Klipper specific
+# =========================
+
+# Backup configs (often auto-generated)
+*.cfg.bak
+*.cfg.backup
+*.old
+
+# Temporary printer files
+*.gcode
+*.ufp
+
+# Logs from printer / klipper
+klippy.log
+moonraker.log
+
+# Local printer data (never upload)
+printer_data/
+config_backup/
+
+# CAN / device identifiers (safety)
+can_uuid.txt
+device_ids.txt
+
+# =========================
+# Personal / sensitive
+# =========================
+
+# Private notes or drafts
+notes-private/
+drafts/
+
+# Secrets / tokens
+*.env
+*.env.*
+secrets/
