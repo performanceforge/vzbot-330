@@ -1,6 +1,8 @@
 This guide works on a Mac
-This guide is specific for CAN-BUS Connection from a Raspberry Pi to Super Pro 8
-
+This guide is the complete start to end firmware setup specific for CAN-BUS 
+Connection from a Raspberry Pi to FLY Super Pro 8
+Some sections may not apply to your setup and may need adjustment, especially 
+the Waveshare 2-channel MCP2515 CAN HAT section.
 IMPORTANT:
       - This firmware is configured for CAN communication.
       - Your CAN wiring and interface must be correctly set up.
@@ -16,8 +18,8 @@ After inserting the SD card and powering on the Raspberry Pi for the first time:
       The system performs setup and filesystem expansion.
       Interrupting this can corrupt the SD card.
 
-Place the sd card into your raspberry
-Turn your VzBot on wait for boot.
+Place the SD card into your Raspberry Pi.
+Turn your VzBot on and wait for it to boot.
 Once login screen appears on your VzBot screen
 Open a terminal in your mac (cmd+spacebar type: terminal and hit enter)
 Paste into terminal: (you can replace vzbot330.local with your ip address too)
@@ -31,8 +33,8 @@ Note: if you get something like WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!
       - Then type yes and that’s it
 
 Type your password and type yes when prompted
-Once you see pi@vzbot330:~ $  (your are logged into your VzBot)
-Paste and run the following commands one by one: (if promted to type yes do so)
+Once you see pi@vzbot330:~ $  (you are logged in into your VzBot)
+Paste and run the following commands one by one: (if prompted to type yes do so)
 
 sudo apt-get update
 
@@ -52,14 +54,14 @@ make menuconfig
 
 Once here move with your keyboard arrows:
 On the top press right or spacebar. (Extra low-level configuration)
-Micro-controller:       (STM32) (Check your Super Pro 8 Processor letters)
-Processor model:        (STM32H723) (Check your Super Pro 8 Processor letters)
+Micro-controller:       (STM32) (Check your FLY Super Pro 8 Processor letters)
+Processor model:        (STM32H723) (Check your FLY Super Pro 8 Processor letters)
 Clock Reference:        (25Mhz)
 Communication interface (CAN bus PB8/PB9)
 CAN bus Speed:          (1000000) 
 GPIO:                   (!PF8)  (Specific to FLY Super Pro 8 H723 configuration)
 
-Note: This value depends on the board configuration and should match the VzBot / Super Pro 8 reference setup.
+Note: This value depends on the board configuration and should match the VzBot / FLY Super Pro 8 reference setup.
       Do not change unless you know your board pin mapping.
 
 Now press Q and then Y
@@ -69,7 +71,7 @@ Paste into your terminal:
 make
 
 Once finished. Now we are going to get the file from our pi (klipper.bin) to flash the 
-Super Pro 8 board. (Use cd to navigate back main folder or cd klipper into a folder)
+FLY Super Pro 8 board. (Use cd to navigate back main folder or cd klipper into a folder)
 In the terminal paste: (ls is for listing files in folder)
 
 ls ~/klipper/out/
@@ -91,34 +93,34 @@ Now it will ask you for your pi password you have setup earlier.
 It will start downloading the file to your mac.
 Once you have your klipper.bin file in your desktop rename it exactly to: 
 firmware.bin
-You will need an additional formated MicroSD card for this.
-Then copy or paste the file it into the formated MicroSD card a small one even 
+You will need an additional formatted MicroSD card for this.
+Then copy the file into the formatted MicroSD card a small one even 
 1gb will work (FAT 32 Format)
 
 Now from your SSH terminal paste this:
 
 sudo shutdown -h now
 
-This will shut down your raspberry pi before switching of the printer power toggle.
+This will shut down your raspberry pi before switching off the printer power toggle.
 Always shutdown your pi before turning the power off! 
 This avoids hard shutdowns which cause major issues in the long run.
 
 Now with the pi shutdown, power off the printer. 
 
 IMPORTANT:
-     Always power OFF the printer before inserting or removing the SD card from the Super Pro 8 board.
+     Always power OFF the printer before inserting or removing the SD card from the FLY Super Pro 8 board.
      Failure to do so can:
      - corrupt the SD card
      - interrupt flashing
      - damage the board in rare cases
 
-I recomend to unplug your raspberry pi power cable, as for the flash its faster and 
+I recommend to unplug your raspberry pi power cable, as for the flash its faster and 
 safer.
-Plug the MicroSD card with the firmware.bin file into your Super Pro 8 Board. 
+Plug the MicroSD card with the firmware.bin file into your FLY Super Pro 8 Board. 
 Power on the printer and wait. The flash is probably done in a couple of seconds but 
 just wait a minute or two.
 Once you switched your printer off again take the MicroSD card and remove it from 
-your Super Pro 8 board. You can plug in the power cable of the pi back in. 
+your FLY Super Pro 8 board. You can plug in the power cable of the pi back in. 
 At your computer, check the content of the card, it should say FLY.CUR if the flash 
 was successful.
 
@@ -148,3 +150,265 @@ sudo service klipper stop
 make flash
 
 sudo service klipper start
+
+Optional troubleshooting: Klipper Host MCU permission issue
+
+After setting the Raspberry Pi as a secondary MCU, check that Klipper starts normally.
+
+If Klipper reports a permission error when trying to connect to:
+
+/tmp/klipper_host_mcu
+
+then the pi user may need access to the tty group.
+
+Run:
+
+sudo usermod -a -G tty pi
+
+Then reboot the Raspberry Pi:
+
+sudo reboot
+
+After the reboot, reconnect with SSH:
+
+ssh pi@vzbot330.local
+
+This step is only needed if you actually see a permission error related to /tmp/klipper_host_mcu.
+
+KlipperScreen installation
+
+We are now going to install KlipperScreen so the touchscreen can be used with the Raspberry Pi.
+
+SSH back into the Raspberry Pi:
+
+ssh pi@vzbot330.local
+
+Update the system and install Git:
+
+sudo apt-get update && sudo apt-get install git -y
+
+Install KIAUH:
+
+cd ~
+git clone https://github.com/dw-0/kiauh.git
+./kiauh/kiauh.sh
+
+Inside KIAUH:
+
+1. Choose Install by entering the number next to Install and pressing Enter.
+2. Choose KlipperScreen by entering the number next to KlipperScreen and pressing Enter.
+3. Confirm the default options when asked.
+4. When asked for the display server, choose X11 / Xserver.
+
+Important: the KIAUH menu numbers can change over time, so choose the option by name, not only by number.
+
+Touchscreen / display configuration
+
+If your touchscreen shows a half-screen issue, touch offset problem, or incorrect display behaviour, edit the Raspberry Pi config file.
+
+On newer MainsailOS / Raspberry Pi OS versions, the file is usually:
+
+sudo nano /boot/firmware/config.txt
+
+If that file does not exist, use:
+
+sudo nano /boot/config.txt
+Screen fix
+
+Find this line:
+
+dtoverlay=vc4-kms-v3d
+
+Change it to:
+
+dtoverlay=vc4-fkms-v3d
+
+If the line is not present, add this under the display / graphics section:
+
+dtoverlay=vc4-fkms-v3d
+
+Then make sure these lines exist under the [all] section:
+
+enable_tvout=0
+disable_splash=1
+
+Important: only change from vc4-kms-v3d to vc4-fkms-v3d if you actually need the touchscreen fix. If your display and touch already work correctly, do not change it.
+
+Waveshare 2-Channel CAN HAT configuration
+
+This section is for the Waveshare 2-channel MCP2515 CAN HAT used in this setup.
+
+Important: Waveshare sells different 2-channel CAN boards. Do not blindly copy these lines unless your HAT model matches this setup.
+
+First install the practical CAN tools:
+
+sudo apt update
+sudo apt install -y can-utils python3-can
+
+These packages are enough for the basic CAN checks used in this guide, including:
+
+candump
+cansend
+python3 ~/klipper/scripts/canbus_query.py
+
+You do not need extra random Python or pip installs if canbus_query.py already runs.
+
+Enable SPI
+
+Open Raspberry Pi configuration:
+
+sudo raspi-config
+
+Then enable SPI:
+
+Interface Options → SPI → Enable
+
+Reboot:
+
+sudo reboot
+
+Reconnect with SSH after the reboot:
+
+ssh pi@vzbot330.local
+Add the CAN HAT overlay lines
+
+Open the Raspberry Pi config file:
+
+sudo nano /boot/firmware/config.txt
+
+If that file does not exist, use:
+
+sudo nano /boot/config.txt
+
+Make sure SPI is enabled:
+
+dtparam=spi=on
+
+Then add the CAN HAT overlay lines:
+
+# Enable SPI1 with 3 chip-select lines
+dtoverlay=spi1-3cs
+
+# CAN0 = MCP2515 using CE1
+dtoverlay=mcp2515,spi1-1,oscillator=16000000,interrupt=25
+
+# CAN1 = MCP2515 using CE2
+dtoverlay=mcp2515,spi1-2,oscillator=16000000,interrupt=24
+
+Save the file:
+
+CTRL + O
+ENTER
+CTRL + X
+
+Reboot:
+
+sudo reboot
+
+Reconnect with SSH:
+
+ssh pi@vzbot330.local
+Verify that the CAN HAT is detected
+
+Check the MCP2515 driver messages:
+
+dmesg | grep -i mcp
+
+A good result should look similar to this:
+
+mcp251x spi1.2 can0: MCP2515 successfully initialized.
+mcp251x spi1.1 can1: MCP2515 successfully initialized.
+
+This confirms that the Raspberry Pi can see the CAN HAT.
+
+Now check that the CAN interfaces exist:
+
+ip link show
+
+You should see:
+
+can0
+can1
+
+You can also check more detailed information with:
+
+ip -details -statistics link show can0
+ip -details -statistics link show can1
+Query both CAN interfaces
+
+Do not assume that the physical CAN0/CAN1 label on the HAT always matches the Linux interface name.
+
+Query both interfaces:
+
+python3 ~/klipper/scripts/canbus_query.py can0
+python3 ~/klipper/scripts/canbus_query.py can1
+
+Use the interface that returns the UUID.
+
+Example result:
+
+can0 → Total 0 uuids found
+can1 → Found canbus_uuid=xxxxxxxxxxxx, Application: Klipper
+
+In this example, the correct interface is:
+
+can1
+
+Important: your UUID will be different. Do not copy someone else’s UUID.
+
+Add the UUID to printer.cfg
+
+Open your Klipper printer.cfg file in Mainsail.
+
+Find or add the MCU section:
+
+[mcu]
+canbus_uuid: YOUR_CANBUS_UUID_HERE
+
+Replace YOUR_CANBUS_UUID_HERE with the UUID found by the CAN query command.
+
+Example format:
+
+[mcu]
+canbus_uuid: xxxxxxxxxxxx
+
+Restart Klipper:
+
+sudo service klipper restart
+Why can1 may be correct instead of can0
+
+can0 and can1 are Linux interface names. They are not guaranteed to match the physical labels printed on the CAN HAT.
+
+The HAT has two MCP2515 CAN chips. During boot, Linux detects them and assigns interface names.
+
+Example:
+
+spi1.2 → can0
+spi1.1 → can1
+
+If your FLY Super Pro 8 board is physically connected to the HAT channel that Linux named can1, then can1 is the correct interface.
+
+That is why one interface may return nothing:
+
+can0 → Total 0 uuids found
+
+while the other interface finds the board:
+
+can1 → Found canbus_uuid=xxxxxxxxxxxx, Application: Klipper
+
+This can happen because of:
+
+Reason	Meaning
+Linux probe order	Linux may name the first detected CAN chip can0, even if that is not the physical port you are using.
+HAT silkscreen vs Linux naming	The printed CAN0/CAN1 label on the HAT does not always match the Linux interface name.
+SPI chip-select mapping	The working CAN chip may be on spi1.1 or spi1.2.
+Physical cable position	The cable may be plugged into the connector that Linux names can1.
+
+So always run:
+
+python3 ~/klipper/scripts/canbus_query.py can0
+python3 ~/klipper/scripts/canbus_query.py can1
+
+Then use whichever interface returns the UUID.
+
+Do not edit Klipper randomly until the CAN query finds the board.
