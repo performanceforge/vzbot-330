@@ -403,8 +403,8 @@ Inside KIAUH:
 ```text
 1. Choose Install by entering the number next to Install and pressing Enter.
 2. Choose KlipperScreen by entering the number next to KlipperScreen and pressing Enter.
-3. Confirm the default options when asked.
-4. When asked for the display server, choose X11 / Xserver.
+3. Confirm the default options when asked. Y
+4. When asked for the display server, choose X / Xserver.
 ```
 
 Important: the KIAUH menu numbers can change over time, so choose the option by name, not only by number.
