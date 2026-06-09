@@ -448,6 +448,7 @@ dtoverlay=vc4-fkms-v3d
 ```
 
 Then make sure these lines exist under the `[all]` section:
+(For half screen touch issue)
 
 ```ini
 enable_tvout=0
