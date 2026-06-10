@@ -470,11 +470,25 @@ If these commands work, continue to resonance testing.
 
 ## 19. Input shaper calibration
 
-Run automatic input shaper calibration: (home first)
+Home first:
 
 ```gcode
 G28 X Y Z
+```
+Run the full automatic input shaper calibration:
+
+```gcode
 SHAPER_CALIBRATE
+```
+
+Or do individual Axis calibration:
+
+```gcode
+SHAPER_CALIBRATE AXIS=X
+```
+
+```gcode
+SHAPER_CALIBRATE AXIS=Y
 ```
 
 Optional individual axis tests:
@@ -487,24 +501,7 @@ TEST_RESONANCES AXIS=X
 TEST_RESONANCES AXIS=Y
 ```
 
-Optional individual calibration:
-
-```gcode
-SHAPER_CALIBRATE AXIS=X
-```
-
-```gcode
-SHAPER_CALIBRATE AXIS=Y
-```
-
-Run the full automatic input shaper calibration:
-
-```gcode
-G28 X Y Z
-SHAPER_CALIBRATE
-```
-
-Then save: 
+Then SAVE: 
 Note: - If you want the data 
       - Before saving Go to section 20 
       - As the temp files will be deleted at boot after the SAVE_CONFIG.
@@ -515,43 +512,97 @@ SAVE_CONFIG
 
 ---
 
-## 20. Download resonance data from the Raspberry Pi
+## 20. Process and download resonance data from the Raspberry Pi
 
 We have to process the data first:
 
-In the Terminal and in SSH:
-Check folder contents (just in case)
+Full automatic input shaper calibration here if individual axis go down to the next section.
+
+Convert the CSV data to png after input shaping:
+If we have done the full automatic input shaper calibration:
+
+```bash
+~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_x_*.csv -o /tmp/shaper_calibrate_x.png
+~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_y_*.csv -o /tmp/shaper_calibrate_y.png
+```
+
+All files in the folder:
 
 ```bash
 ls -lh /tmp
 ```
+
+OR for only these files:
+
+```bash
+ls -lh /tmp | grep -E "calibration_data|shaper_calibrate"
+```
+
 You should see something like:
 
 ```text
-total 1..K
--rw-r--r-- 1 pi   pi   9.6K Jun 10 16:22 calibration_data_x_....csv
--rw-r--r-- 1 pi   pi   9.6K Jun 10 16:30 calibration_data_y_....csv
+-rw-r--r-- 1 pi   pi   9.6K Jun 10 16:59 calibration_data_x_....csv
+-rw-r--r-- 1 pi   pi   9.6K Jun 10 16:59 calibration_data_y_....csv
+-rw-rw-r-- 1 pi   pi   130K Jun 10 17:00 shaper_calibrate_x.png
+-rw-rw-r-- 1 pi   pi   140K Jun 10 17:00 shaper_calibrate_y.png
 ```
 
-
-Only for these files:
-ls -lh /tmp | grep -E "resonances|shaper_calibrate"
-
-
-SHAPER_CALIBRATE AXIS=Y
-
-From a Mac Terminal window, not inside SSH:
+From a Mac Terminal window, not inside SSH: (When run full calibration)
 
 ```bash
 scp 'pi@vzbot330.local:/tmp/calibration_data_*.csv' ~/Downloads/
 scp 'pi@vzbot330.local:/tmp/shaper_calibrate_*.png' ~/Downloads/
 ```
 
-For individual axis resonance files:
+---
+
+When individually done shaper calibrate X and/or Y
+Convert the CSV data to png after input shaping:
+In our Terminal SSH:
 
 ```bash
-scp 'pi@vzbot330.local:/tmp/resonances_*.csv' ~/Downloads/
+~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_x_*.csv -o /tmp/shaper_calibrate_x.png
+~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_y_*.csv -o /tmp/shaper_calibrate_y.png
+```
+
+In the Terminal and in SSH:
+Check folder contents (just in case)
+
+All files in the folder:
+
+```bash
+ls -lh /tmp
+```
+
+OR for only these files:
+
+```bash
+ls -lh /tmp | grep -E "calibration_data|shaper_calibrate"
+```
+
+You should see something like:
+
+```text
+-rw-r--r-- 1 pi   pi   9.6K Jun 10 16:22 calibration_data_x_....csv
+-rw-r--r-- 1 pi   pi   9.6K Jun 10 16:30 calibration_data_y_....csv
+-rw-rw-r-- 1 pi   pi   143K Jun 10 16:42 shaper_calibrate_x.png
+-rw-rw-r-- 1 pi   pi   134K Jun 10 16:42 shaper_calibrate_y.png
+```
+
+From a Mac Terminal window, not inside SSH: (When run individually)
+
+```bash
+scp 'pi@vzbot330.local:/tmp/calibration_data_*.csv' ~/Downloads/
 scp 'pi@vzbot330.local:/tmp/shaper_calibrate_*.png' ~/Downloads/
+```
+
+It will request your Raspberry Pi Password
+
+Then SAVE the Shaper Calibration: 
+on screen SAVE or in the CONSOLE
+
+```gcode
+SAVE_CONFIG
 ```
 
 ---
@@ -584,62 +635,9 @@ This reads back the current input shaper settings.
 
 ---
 
-## Troubleshooting notes
-
-### Unknown pin chip name 'probe'
-
-This usually means Klipper is expecting a probe object but Beacon is not configured correctly, or the old probe configuration is conflicting.
-
-Check:
-
-```ini
-[beacon]
-```
-
-exists and loads correctly.
-
-Check that the Z stepper uses:
-
-```ini
-endstop_pin: probe:z_virtual_endstop
-```
-
-Remove old actual `[probe]` or `[bltouch]` sections.
-
-Do not remove `[safe_z_home]`, `[bed_mesh]`, or `[resonance_tester]`.
-
-### Unknown command: TESTZ
-
-`TESTZ` only works while the manual calibration process is active.
-
-Run:
-
-```gcode
-BEACON_CALIBRATE
-```
-
-Then use:
-
-```gcode
-TESTZ Z=-0.01
-```
-
-Finish with:
-
-```gcode
-ACCEPT
-```
-
-### MCU shutdown: Timer too close
-
-If this happens after updates, service restarts, or package installs, do a full clean restart before changing Beacon config.
-
-Recommended recovery:
+Finally a full reboot recomended:
 
 ```bash
-sudo shutdown -h now
+sudo reboot
 ```
 
-Then power off the printer completely, wait a few seconds, and power it back on.
-
-Do not randomly delete config sections until the machine has had a full power cycle.
