@@ -1,0 +1,266 @@
+
+## Waveshare 2-Channel CAN HAT configuration
+
+This section is for the Waveshare 2-channel MCP2515 CAN HAT used in this setup.
+
+Important: Waveshare sells different 2-channel CAN boards. Do not blindly copy these lines unless your HAT model matches this setup.
+
+If your Waveshare board is not the same MCP2515-based 2-channel HAT, verify the overlay lines against your exact Waveshare model before continuing.
+
+First install the practical CAN tools:
+
+```bash
+sudo apt update
+```
+
+```bash
+sudo apt install -y can-utils python3-can
+```
+
+These packages are enough for the basic CAN checks used in this guide, including:
+
+```text
+candump
+cansend
+python3 ~/klipper/scripts/canbus_query.py
+```
+
+You do not need extra random Python or pip installs if `canbus_query.py` already runs.
+
+---
+
+## Enable SPI
+
+Open Raspberry Pi configuration:
+
+```bash
+sudo raspi-config
+```
+
+Then enable SPI:
+
+```text
+Interface Options → SPI → Enable
+```
+
+Reboot:
+
+```bash
+sudo reboot
+```
+
+Reconnect with SSH after the reboot:
+
+```bash
+ssh pi@vzbot330.local
+```
+
+---
+
+## Add the CAN HAT overlay lines
+
+Open the Raspberry Pi config file:
+
+```bash
+sudo nano /boot/firmware/config.txt
+```
+
+If that file does not exist, use:
+
+```bash
+sudo nano /boot/config.txt
+```
+
+Make sure SPI is enabled:
+
+```ini
+dtparam=spi=on
+```
+
+Then add the CAN HAT overlay lines:
+
+```ini
+# Enable SPI1 with 3 chip-select lines
+dtoverlay=spi1-3cs
+
+# CAN0 = MCP2515 using CE1
+dtoverlay=mcp2515,spi1-1,oscillator=16000000,interrupt=25
+
+# CAN1 = MCP2515 using CE2
+dtoverlay=mcp2515,spi1-2,oscillator=16000000,interrupt=24
+```
+
+Save the file:
+
+```text
+CTRL + O
+ENTER
+CTRL + X
+```
+
+Reboot:
+
+```bash
+sudo reboot
+```
+
+Reconnect with SSH:
+
+```bash
+ssh pi@vzbot330.local
+```
+
+---
+
+## Verify that the CAN HAT is detected
+
+Check the MCP2515 driver messages:
+
+```bash
+dmesg | grep -i mcp
+```
+
+A good result should look similar to this:
+
+```text
+mcp251x spi1.2 can0: MCP2515 successfully initialized.
+mcp251x spi1.1 can1: MCP2515 successfully initialized.
+```
+
+This confirms that the Raspberry Pi can see the CAN HAT.
+
+Now check that the CAN interfaces exist:
+
+```bash
+ip link show
+```
+
+You should see:
+
+```text
+can0
+can1
+```
+
+You can also check more detailed information with:
+
+```bash
+ip -details -statistics link show can0
+```
+
+```bash
+ip -details -statistics link show can1
+```
+
+---
+
+## Query both CAN interfaces
+
+Do not assume that the physical CAN0/CAN1 label on the HAT always matches the Linux interface name.
+
+Query both interfaces:
+
+```bash
+python3 ~/klipper/scripts/canbus_query.py can0
+```
+
+```bash
+python3 ~/klipper/scripts/canbus_query.py can1
+```
+
+Use the interface that returns the UUID.
+
+Example result:
+
+```text
+can0 → Total 0 uuids found
+can1 → Found canbus_uuid=xxxxxxxxxxxx, Application: Klipper
+```
+
+In this example, the correct interface is:
+
+```text
+can1
+```
+
+Important: your UUID will be different. Do not copy someone else’s UUID.
+
+---
+
+## Add the UUID to printer.cfg
+
+Open your Klipper `printer.cfg` file in Mainsail.
+
+Find or add the MCU section:
+
+```ini
+[mcu]
+canbus_uuid: YOUR_CANBUS_UUID_HERE
+```
+
+Replace `YOUR_CANBUS_UUID_HERE` with the UUID found by the CAN query command.
+
+Example format:
+
+```ini
+[mcu]
+canbus_uuid: xxxxxxxxxxxx
+```
+
+Restart Klipper:
+
+```bash
+sudo service klipper restart
+```
+
+---
+
+## Why can1 may be correct instead of can0
+
+`can0` and `can1` are Linux interface names. They are not guaranteed to match the physical labels printed on the CAN HAT.
+
+The HAT has two MCP2515 CAN chips. During boot, Linux detects them and assigns interface names.
+
+Example:
+
+```text
+spi1.2 → can0
+spi1.1 → can1
+```
+
+If your FLY Super Pro 8 board is physically connected to the HAT channel that Linux named `can1`, then `can1` is the correct interface.
+
+That is why one interface may return nothing:
+
+```text
+can0 → Total 0 uuids found
+```
+
+while the other interface finds the board:
+
+```text
+can1 → Found canbus_uuid=xxxxxxxxxxxx, Application: Klipper
+```
+
+This can happen because of:
+
+| Reason | Meaning |
+|---|---|
+| Linux probe order | Linux may name the first detected CAN chip `can0`, even if that is not the physical port you are using. |
+| HAT silkscreen vs Linux naming | The printed CAN0/CAN1 label on the HAT does not always match the Linux interface name. |
+| SPI chip-select mapping | The working CAN chip may be on `spi1.1` or `spi1.2`. |
+| Physical cable position | The cable may be plugged into the connector that Linux names `can1`. |
+
+So always run:
+
+```bash
+python3 ~/klipper/scripts/canbus_query.py can0
+```
+
+```bash
+python3 ~/klipper/scripts/canbus_query.py can1
+```
+
+Then use whichever interface returns the UUID.
+
+Do not edit Klipper randomly until the CAN query finds the board.
