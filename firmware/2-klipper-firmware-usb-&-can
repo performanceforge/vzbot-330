@@ -459,3 +459,17 @@ disable_splash=1
 ```
 
 Important: only change from `vc4-kms-v3d` to `vc4-fkms-v3d` if you actually need the touchscreen fix. If your display and touch already work correctly, do not change it.
+
+Now you can access your Vzbot in your local browser just type into the browser:
+
+vzbot330.local
+OR
+http://vzbot330.local/
+
+and proceed with the printer.cfg, start_stop.cfg, etc. files.
+All the files are referenced here: https://docs.vzbot.org/vz330_mellow/electronics/Printer_Config
+
+while I also have printer.cfg here so you can have a reference particularly for CAN.
+
+For the Orcaslicer setup refer to: orcaslicer-notes in the firmware folder.
+
