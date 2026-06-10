@@ -44,13 +44,19 @@ This means Beacon was detected by the installer.
 
 ## 2. Add Beacon to Moonraker update manager
 
-Open `moonraker.conf`:
+Open `moonraker.conf`: directly in the the Mainsail Dashboard 
+
+```browser
+http://vzbot330.local/config
+```
+
+OR
 
 ```bash
 nano ~/printer_data/config/moonraker.conf
 ```
 
-Add:
+Add: (in the end of the file)
 
 ```ini
 # Beacon Probe Rev H update manager
@@ -64,8 +70,7 @@ requirements: requirements.txt
 install_script: install.sh
 is_system_service: False
 managed_services: klipper
-info_tags:
-  desc=Beacon Surface Scanner
+info_tags: desc=Beacon Surface Scanner
 ```
 
 Save the file and restart Moonraker if needed.
@@ -120,6 +125,19 @@ Important:
 * `serial` must match your own Beacon.
 * `x_offset` and `y_offset` must match your toolhead.
 * The values above are examples from this VzBot 330 setup.
+
+Then SAVE & RESTART
+
+---
+
+Sometimes a PROBE error appears in the Dashboard so either check printer.cfg and SAVE & RESTART
+If the error persist then reboot the Raspberry Pi:
+
+```bash
+sudo reboot
+```
+
+If it still persist then continue bellow to point 5. 
 
 ---
 
