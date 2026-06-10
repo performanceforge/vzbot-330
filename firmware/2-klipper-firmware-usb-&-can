@@ -460,6 +460,8 @@ disable_splash=1
 
 Important: only change from `vc4-kms-v3d` to `vc4-fkms-v3d` if you actually need the touchscreen fix. If your display and touch already work correctly, do not change it.
 
+---
+
 Now you can access your Vzbot in your local browser just type into the browser:
 
 vzbot330.local
@@ -469,7 +471,41 @@ http://vzbot330.local/
 and proceed with the printer.cfg, start_stop.cfg, etc. files.
 All the files are referenced here: https://docs.vzbot.org/vz330_mellow/electronics/Printer_Config
 
+Normally the files to add are:
+printer.cfg
+Exclude_Object.cfg
+Marcro.cfg
+Speed.cfg
+Start_Stop.cfg
+
 while I also have printer.cfg here so you can have a reference particularly for CAN.
+
+In order to import the files into your machine in the mainsail dashboard in the browser:
+Enter the MACHINE page
+and press: upload
 
 For the Orcaslicer setup refer to: orcaslicer-notes in the firmware folder.
 
+---
+
+To get the USB serial:
+
+```bash
+ls /dev/serial/by-id/*
+```
+
+which will provide with the serials of all connected USB devices:
+
+/dev/serial/by-id/usb-Beacon_Beacon_RevH_EE....
+/dev/serial/by-id/usb-Klipper_stm32h723xx_1F...
+
+this ones needs to be placed in the printer.cfg file in the MCU section:
+
+[mcu]
+serial: /dev/serial/by-id/usb-Klipper_stm32h723xx_1F...  # put your own Serial here for usb only
+restart_method: command
+
+
+for the CAN serial please refer to the file in the firmware folder:
+
+3-can-hat-waveshare-2-ch-config 
