@@ -44,19 +44,19 @@ This means Beacon was detected by the installer.
 
 ## 2. Add Beacon to Moonraker update manager
 
-Open `moonraker.conf`: directly in the the Mainsail Dashboard 
+Open `moonraker.conf` directly from the Mainsail dashboard:
 
 ```browser
 http://vzbot330.local/config
 ```
 
-OR
+Or:
 
 ```bash
 nano ~/printer_data/config/moonraker.conf
 ```
 
-Add: (in the end of the file)
+Add this at the end of the file:
 
 ```ini
 # Beacon Probe Rev H update manager
@@ -87,7 +87,7 @@ Run:
 ls /dev/serial/by-id/
 ```
 
-or:
+Or:
 
 ```bash
 ls /dev/serial/by-id/*Beacon*
@@ -130,20 +130,23 @@ Then SAVE & RESTART
 
 ---
 
-Sometimes a PROBE error appears in the Dashboard so either check printer.cfg and SAVE & RESTART
-If the error persist then reboot the Raspberry Pi:
+Sometimes a probe error appears in the dashboard after editing the config.
+First check `printer.cfg`, then use **Save & Restart** again.
+If the error persists, reboot the Raspberry Pi:
 
 ```bash
 sudo reboot
 ```
 
-If it still persist then continue bellow to point 5. 
+If the error still persists, continue to the next section and check for old probe sections.
 
 ---
 
 ## 5. Beacon replaces [probe], not bed mesh or safe z home
 
-If your config has an old physical probe section, remove it.
+If your config has an old physical probe section, remove it. This only applies to actual 
+old probe sections, not to [safe_z_home], [bed_mesh], or [resonance_tester].
+(only if you still get the error)
 
 Remove old sections such as:
 
@@ -151,7 +154,7 @@ Remove old sections such as:
 [probe]
 ```
 
-or:
+Or:
 
 ```ini
 [bltouch]
@@ -323,7 +326,7 @@ While the Beacon calibration manual probe is active, use commands such as:
 TESTZ Z=-0.01
 ```
 
-or:
+Or:
 
 ```gcode
 TESTZ Z=0.01
@@ -420,27 +423,25 @@ SAVE_CONFIG
 ## 17. First layer test and live Z adjustment
 
 Print a simple first layer test.
-
 If the nozzle is too low or dragging, raise the Z offset during the print.
-
 If the nozzle is too high, lower the Z offset during the print.
-
 After the first layer is correct, apply the live Z adjustment to the probe offset:
 
 ```gcode
 Z_OFFSET_APPLY_PROBE
 ```
-or directly in the Dashboard in the Toolhead Widget the Z-Offset section:
-might show like 
 
-Z-Offset: 0.160 
+You can also save the adjusted offset from the Mainsail dashboard.
+In the Toolhead widget, the Z-offset section may show something like:
 
-Then save:
+```text
+Z-Offset: 0.160
+```
 
-Which is your offset you have manually adjusted in the first layer test print. To the
-right in the same line you will see the button SAVE
+This is the offset you adjusted during the first layer test print.
+If the first layer looks correct, click the Save button next to the Z-offset value.
 
-Or in the console type:
+Or save from the console:
 
 ```gcode
 SAVE_CONFIG
@@ -481,7 +482,7 @@ Run the full automatic input shaper calibration:
 SHAPER_CALIBRATE
 ```
 
-Or do individual Axis calibration:
+Or do individual axis calibration:
 
 ```gcode
 SHAPER_CALIBRATE AXIS=X
@@ -501,10 +502,7 @@ TEST_RESONANCES AXIS=X
 TEST_RESONANCES AXIS=Y
 ```
 
-Then SAVE: 
-Note: - If you want the data 
-      - Before saving Go to section 20 
-      - As the temp files will be deleted at boot after the SAVE_CONFIG.
+Then save: 
 
 ```gcode
 SAVE_CONFIG
@@ -514,12 +512,13 @@ SAVE_CONFIG
 
 ## 20. Process and download resonance data from the Raspberry Pi
 
-We have to process the data first:
+Process the data first:
 
-Full automatic input shaper calibration here if individual axis go down to the next section.
+If you ran full automatic input shaper calibration, use this section. If you calibrated 
+individual axes, use the next subsection.
 
-Convert the CSV data to png after input shaping:
-If we have done the full automatic input shaper calibration:
+Convert the CSV data to PNG after input shaping:
+If you ran the full automatic input shaper calibration:
 
 ```bash
 ~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_x_*.csv -o /tmp/shaper_calibrate_x.png
@@ -532,7 +531,7 @@ All files in the folder:
 ls -lh /tmp
 ```
 
-OR for only these files:
+Or for only these files:
 
 ```bash
 ls -lh /tmp | grep -E "calibration_data|shaper_calibrate"
@@ -556,16 +555,16 @@ scp 'pi@vzbot330.local:/tmp/shaper_calibrate_*.png' ~/Downloads/
 
 ---
 
-When individually done shaper calibrate X and/or Y
+When you have calibrated X and/or Y individually:
 Convert the CSV data to png after input shaping:
-In our Terminal SSH:
+In the SSH terminal:
 
 ```bash
 ~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_x_*.csv -o /tmp/shaper_calibrate_x.png
 ~/klipper/scripts/calibrate_shaper.py /tmp/calibration_data_y_*.csv -o /tmp/shaper_calibrate_y.png
 ```
 
-In the Terminal and in SSH:
+In the SSH terminal:
 Check folder contents (just in case)
 
 All files in the folder:
@@ -574,7 +573,7 @@ All files in the folder:
 ls -lh /tmp
 ```
 
-OR for only these files:
+Or for only these files:
 
 ```bash
 ls -lh /tmp | grep -E "calibration_data|shaper_calibrate"
@@ -596,10 +595,10 @@ scp 'pi@vzbot330.local:/tmp/calibration_data_*.csv' ~/Downloads/
 scp 'pi@vzbot330.local:/tmp/shaper_calibrate_*.png' ~/Downloads/
 ```
 
-It will request your Raspberry Pi Password
+It will request your Raspberry Pi password.
 
-Then SAVE the Shaper Calibration: 
-on screen SAVE or in the CONSOLE
+Then save the shaper calibration:
+Use the on-screen Save button or run this in the console:
 
 ```gcode
 SAVE_CONFIG
@@ -619,7 +618,7 @@ cd ~/printer_data/logs
 grep -A8 "\[input_shaper\]" klippy.log | head -n 20
 ```
 
-or:
+Or:
 
 ```bash
 grep -Ei "shaper_freq|input shaper" klippy.log | tail -n 20
@@ -635,7 +634,7 @@ This reads back the current input shaper settings.
 
 ---
 
-Finally a full reboot recomended:
+After setup, a final full reboot is recommended:
 
 ```bash
 sudo reboot
