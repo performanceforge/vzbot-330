@@ -430,8 +430,17 @@ After the first layer is correct, apply the live Z adjustment to the probe offse
 ```gcode
 Z_OFFSET_APPLY_PROBE
 ```
+or directly in the Dashboard in the Toolhead Widget the Z-Offset section:
+might show like 
+
+Z-Offset: 0.160 
 
 Then save:
+
+Which is your offset you have manually adjusted in the first layer test print. To the
+right in the same line you will see the button SAVE
+
+Or in the console type:
 
 ```gcode
 SAVE_CONFIG
@@ -461,16 +470,11 @@ If these commands work, continue to resonance testing.
 
 ## 19. Input shaper calibration
 
-Run automatic input shaper calibration:
+Run automatic input shaper calibration: (home first)
 
 ```gcode
+G28 X Y Z
 SHAPER_CALIBRATE
-```
-
-Then save:
-
-```gcode
-SAVE_CONFIG
 ```
 
 Optional individual axis tests:
@@ -493,9 +497,48 @@ SHAPER_CALIBRATE AXIS=X
 SHAPER_CALIBRATE AXIS=Y
 ```
 
+Run the full automatic input shaper calibration:
+
+```gcode
+G28 X Y Z
+SHAPER_CALIBRATE
+```
+
+Then save: 
+Note: - If you want the data 
+      - Before saving Go to section 20 
+      - As the temp files will be deleted at boot after the SAVE_CONFIG.
+
+```gcode
+SAVE_CONFIG
+```
+
 ---
 
 ## 20. Download resonance data from the Raspberry Pi
+
+We have to process the data first:
+
+In the Terminal and in SSH:
+Check folder contents (just in case)
+
+```bash
+ls -lh /tmp
+```
+You should see something like:
+
+```text
+total 1..K
+-rw-r--r-- 1 pi   pi   9.6K Jun 10 16:22 calibration_data_x_....csv
+-rw-r--r-- 1 pi   pi   9.6K Jun 10 16:30 calibration_data_y_....csv
+```
+
+
+Only for these files:
+ls -lh /tmp | grep -E "resonances|shaper_calibrate"
+
+
+SHAPER_CALIBRATE AXIS=Y
 
 From a Mac Terminal window, not inside SSH:
 
