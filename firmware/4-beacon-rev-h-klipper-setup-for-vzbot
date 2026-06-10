@@ -1,0 +1,584 @@
+# Beacon Rev H Klipper Setup for VzBot 330
+
+This guide documents a practical Beacon Rev H setup on a VzBot 330 running Klipper.
+
+It assumes:
+
+* Beacon Rev H is mounted on the toolhead.
+* Beacon USB is connected directly to the Raspberry Pi.
+* Klipper, Moonraker, and Mainsail are already installed.
+* The printer has already been flashed and can connect to the MCU.
+* A working `printer.cfg` already exists, or you are adapting one from a previous setup.
+
+Important: Beacon warns against hot-plugging. Connect or disconnect Beacon USB only when the Raspberry Pi is powered off.
+
+---
+
+## 1. Install Beacon Klipper module
+
+SSH into the Raspberry Pi:
+
+```bash
+ssh pi@vzbot330.local
+```
+
+Install Beacon Klipper:
+
+```bash
+cd ~
+git clone https://github.com/beacon3d/beacon_klipper.git
+./beacon_klipper/install.sh
+```
+
+During installation, Beacon may report that the firmware is already current.
+
+Example:
+
+```text
+Beacon 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' is already flashed with the current firmware version.
+```
+
+This means Beacon was detected by the installer.
+
+---
+
+## 2. Add Beacon to Moonraker update manager
+
+Open `moonraker.conf`:
+
+```bash
+nano ~/printer_data/config/moonraker.conf
+```
+
+Add:
+
+```ini
+# Beacon Probe Rev H update manager
+[update_manager beacon]
+type: git_repo
+channel: dev
+path: ~/beacon_klipper
+origin: https://github.com/beacon3d/beacon_klipper.git
+env: ~/klippy-env/bin/python
+requirements: requirements.txt
+install_script: install.sh
+is_system_service: False
+managed_services: klipper
+info_tags:
+  desc=Beacon Surface Scanner
+```
+
+Save the file and restart Moonraker if needed.
+
+This allows Beacon to be updated from the web interface.
+
+---
+
+## 3. Find the Beacon serial path
+
+Run:
+
+```bash
+ls /dev/serial/by-id/
+```
+
+or:
+
+```bash
+ls /dev/serial/by-id/*Beacon*
+```
+
+Copy the full Beacon serial path.
+
+Example format:
+
+```text
+/dev/serial/by-id/usb-Beacon_Beacon_RevH_xxxxxxxxxxxx-if00
+```
+
+Do not copy another user’s serial path. Your Beacon serial will be different.
+
+---
+
+## 4. Add Beacon to printer.cfg
+
+Open `printer.cfg` in Mainsail.
+
+Add or verify:
+
+```ini
+[beacon]
+serial: /dev/serial/by-id/usb-Beacon_Beacon_RevH_xxxxxxxxxxxx-if00
+x_offset: 0
+y_offset: 22.8
+mesh_main_direction: x
+mesh_runs: 2
+```
+
+Important:
+
+* `serial` must match your own Beacon.
+* `x_offset` and `y_offset` must match your toolhead.
+* The values above are examples from this VzBot 330 setup.
+
+---
+
+## 5. Beacon replaces [probe], not bed mesh or safe z home
+
+If your config has an old physical probe section, remove it.
+
+Remove old sections such as:
+
+```ini
+[probe]
+```
+
+or:
+
+```ini
+[bltouch]
+```
+
+Do not delete these sections just because they are under a comment heading called “Probe”:
+
+```ini
+[safe_z_home]
+```
+
+```ini
+[bed_mesh]
+```
+
+```ini
+[resonance_tester]
+```
+
+Beacon still needs a valid `[bed_mesh]` section.
+
+---
+
+## 6. Z endstop configuration
+
+For Beacon homing, the Z stepper should use Beacon as the virtual endstop.
+
+In your `[stepper_z]` section, use:
+
+```ini
+endstop_pin: probe:z_virtual_endstop
+homing_retract_dist: 0
+```
+
+Important: Beacon needs `homing_retract_dist: 0`.
+
+---
+
+## 7. Safe Z home
+
+Set the safe Z home position near the center of the bed.
+
+For this VzBot 330 setup:
+
+```ini
+[safe_z_home]
+home_xy_position: 159.5, 151.5
+z_hop: 3
+```
+
+Adjust this for your own machine.
+
+---
+
+## 8. Bed mesh configuration
+
+Beacon requires a valid `[bed_mesh]` section.
+
+Example starting configuration:
+
+```ini
+[bed_mesh]
+algorithm: bicubic
+speed: 200
+mesh_min: 20,20
+mesh_max: 319,297
+probe_count: 10,10
+```
+
+For first setup, use a conservative mesh speed such as `200`.
+
+After the machine is confirmed stable, higher speeds can be tested.
+
+---
+
+## 9. Rev H accelerometer configuration
+
+Beacon Rev H includes an accelerometer.
+
+Add or verify:
+
+```ini
+[resonance_tester]
+accel_chip: beacon
+probe_points: 90, 90, 20
+```
+
+Adjust `probe_points` for your machine if needed.
+
+---
+
+## 10. Restart Klipper
+
+Restart Klipper from Mainsail or run:
+
+```bash
+sudo service klipper restart
+```
+
+If you get an error, fix config issues before continuing.
+
+---
+
+## 11. PID tune after fresh flash
+
+After a fresh firmware setup, PID tune the hotend and bed.
+
+Hotend example:
+
+```gcode
+PID_CALIBRATE HEATER=extruder TARGET=200
+```
+
+Bed example:
+
+```gcode
+PID_CALIBRATE HEATER=heater_bed TARGET=65
+```
+
+Then save:
+
+```gcode
+SAVE_CONFIG
+```
+
+---
+
+## 12. Heat soak before final Beacon calibration
+
+For the first test, Beacon can be calibrated cold.
+
+For better real-world performance, heat the bed to your normal printing temperature and let the machine stabilize before final calibration.
+
+Example:
+
+```gcode
+M140 S65
+```
+
+Wait around 20–30 minutes with the bed at temperature before final calibration.
+
+---
+
+## 13. Beacon calibration
+
+Home X and Y:
+
+```gcode
+G28 X Y
+```
+
+Move to the bed center:
+
+```gcode
+G0 X159.5 Y151.5
+```
+
+Start Beacon calibration:
+
+```gcode
+BEACON_CALIBRATE
+```
+
+Use the paper test to set the nozzle height.
+
+While the Beacon calibration manual probe is active, use commands such as:
+
+```gcode
+TESTZ Z=-0.01
+```
+
+or:
+
+```gcode
+TESTZ Z=0.01
+```
+
+When the paper has light drag, accept:
+
+```gcode
+ACCEPT
+```
+
+Important:
+
+* `TESTZ` only works while the manual calibration is active.
+* If `TESTZ` says “Unknown command”, restart the calibration process with `BEACON_CALIBRATE`.
+* Do not squeeze the paper so hard that it cannot move.
+* Aim for light, repeatable drag.
+
+Then save if prompted:
+
+```gcode
+SAVE_CONFIG
+```
+
+---
+
+## 14. Home and verify Beacon
+
+After calibration, home the printer:
+
+```gcode
+G28
+```
+
+If `G28 Z` alone causes issues, use full homing:
+
+```gcode
+G28 X Y Z
+```
+
+Then run:
+
+```gcode
+PROBE_ACCURACY
+```
+
+Good repeatability should show a very small range and standard deviation.
+
+Example result:
+
+```text
+range 0.001445
+standard deviation 0.000185
+```
+
+---
+
+## 15. Estimate Z backlash
+
+Run:
+
+```gcode
+BEACON_ESTIMATE_BACKLASH
+```
+
+Example result:
+
+```text
+Median distance moving up 1.99880, down 2.00676, delta 0.00796 over 20 samples
+```
+
+Record the result.
+
+A small value under 0.01 mm is usually not an immediate failure, but it is useful to know.
+
+---
+
+## 16. Run bed mesh
+
+Run:
+
+```gcode
+BED_MESH_CALIBRATE
+```
+
+When complete, save:
+
+```gcode
+SAVE_CONFIG
+```
+
+---
+
+## 17. First layer test and live Z adjustment
+
+Print a simple first layer test.
+
+If the nozzle is too low or dragging, raise the Z offset during the print.
+
+If the nozzle is too high, lower the Z offset during the print.
+
+After the first layer is correct, apply the live Z adjustment to the probe offset:
+
+```gcode
+Z_OFFSET_APPLY_PROBE
+```
+
+Then save:
+
+```gcode
+SAVE_CONFIG
+```
+
+Important: only apply the offset once you are happy with the first layer.
+
+---
+
+## 18. Beacon Rev H accelerometer test
+
+Check that Beacon’s accelerometer responds:
+
+```gcode
+ACCELEROMETER_QUERY
+```
+
+Then check noise:
+
+```gcode
+MEASURE_AXES_NOISE
+```
+
+If these commands work, continue to resonance testing.
+
+---
+
+## 19. Input shaper calibration
+
+Run automatic input shaper calibration:
+
+```gcode
+SHAPER_CALIBRATE
+```
+
+Then save:
+
+```gcode
+SAVE_CONFIG
+```
+
+Optional individual axis tests:
+
+```gcode
+TEST_RESONANCES AXIS=X
+```
+
+```gcode
+TEST_RESONANCES AXIS=Y
+```
+
+Optional individual calibration:
+
+```gcode
+SHAPER_CALIBRATE AXIS=X
+```
+
+```gcode
+SHAPER_CALIBRATE AXIS=Y
+```
+
+---
+
+## 20. Download resonance data from the Raspberry Pi
+
+From a Mac Terminal window, not inside SSH:
+
+```bash
+scp 'pi@vzbot330.local:/tmp/calibration_data_*.csv' ~/Downloads/
+scp 'pi@vzbot330.local:/tmp/shaper_calibrate_*.png' ~/Downloads/
+```
+
+For individual axis resonance files:
+
+```bash
+scp 'pi@vzbot330.local:/tmp/resonances_*.csv' ~/Downloads/
+scp 'pi@vzbot330.local:/tmp/shaper_calibrate_*.png' ~/Downloads/
+```
+
+---
+
+## 21. Check active input shaper settings
+
+SSH into the Raspberry Pi and run:
+
+```bash
+cd ~/printer_data/logs
+```
+
+```bash
+grep -A8 "\[input_shaper\]" klippy.log | head -n 20
+```
+
+or:
+
+```bash
+grep -Ei "shaper_freq|input shaper" klippy.log | tail -n 20
+```
+
+In the Klipper console, you can also run:
+
+```gcode
+SET_INPUT_SHAPER
+```
+
+This reads back the current input shaper settings.
+
+---
+
+## Troubleshooting notes
+
+### Unknown pin chip name 'probe'
+
+This usually means Klipper is expecting a probe object but Beacon is not configured correctly, or the old probe configuration is conflicting.
+
+Check:
+
+```ini
+[beacon]
+```
+
+exists and loads correctly.
+
+Check that the Z stepper uses:
+
+```ini
+endstop_pin: probe:z_virtual_endstop
+```
+
+Remove old actual `[probe]` or `[bltouch]` sections.
+
+Do not remove `[safe_z_home]`, `[bed_mesh]`, or `[resonance_tester]`.
+
+### Unknown command: TESTZ
+
+`TESTZ` only works while the manual calibration process is active.
+
+Run:
+
+```gcode
+BEACON_CALIBRATE
+```
+
+Then use:
+
+```gcode
+TESTZ Z=-0.01
+```
+
+Finish with:
+
+```gcode
+ACCEPT
+```
+
+### MCU shutdown: Timer too close
+
+If this happens after updates, service restarts, or package installs, do a full clean restart before changing Beacon config.
+
+Recommended recovery:
+
+```bash
+sudo shutdown -h now
+```
+
+Then power off the printer completely, wait a few seconds, and power it back on.
+
+Do not randomly delete config sections until the machine has had a full power cycle.
